@@ -1,0 +1,37 @@
+﻿<div class="card border-0 shadow mt-4 mb-5">
+	<div class="card-header bg-secondary bg-gradient ml-0 py-2 text-center">
+		<div class="row">
+			<div class="col-12 text-center">
+				<h2 class="text-white py-2">Company List</h2>
+			</div>
+		</div>
+	</div>
+
+	<div class="card-body p-4">
+		<div class="row pb-3">
+			<div class="col-6 text-start">
+				<a asp-controller="Company" asp-action="Upsert" class="btn btn-primary">
+					<i class="bi bi-plus-circle"></i> Create New Company
+				</a>
+			</div>
+			<div class="col-6">
+			</div>
+		</div>
+		<table id="tblData" class="table table-striped pt-2" style="width: 100%">
+			<thead class="table-dark">
+				<tr>
+					<th>Name</th>
+					<th>Address</th>
+					<th>City</th>
+					<th>State</th>
+					<th>Phone Number</th>
+					<th></th>
+				</tr>
+			</thead>
+		</table>
+	</div>
+</div>
+
+@section Scripts {
+	<script src="~/js/company.js"></script>
+}
