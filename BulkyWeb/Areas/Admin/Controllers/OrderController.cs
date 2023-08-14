@@ -129,8 +129,8 @@ namespace BulkyBookWeb.Areas.Admin.Controllers
 				.GetAll(detail => detail.OrderHeaderId == OrderVM.OrderHeader.Id, includeProperties: "Product");
 
 			// Stripe logic
-			var domain = "https://localhost:44373/";
-			var options = new SessionCreateOptions
+			var domain = Request.Scheme + "://" + Request.Host.Value + "/";
+            var options = new SessionCreateOptions
 			{
 				SuccessUrl = domain + $"admin/order/PaymentConfirmation?orderHeaderId={OrderVM.OrderHeader.Id}",
 				CancelUrl = domain + $"admin/order/details?orderId={OrderVM.OrderHeader.Id}",
