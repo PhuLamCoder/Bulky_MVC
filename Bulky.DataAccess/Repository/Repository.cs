@@ -37,7 +37,7 @@ namespace BulkyBook.DataAccess.Repository
 			if (!string.IsNullOrEmpty(includeProperties))
 			{
 				foreach (var includeProp in includeProperties
-					.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+					.Split(new char[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries))
 				{
 					query = query.Include(includeProp);
 				}
@@ -55,7 +55,7 @@ namespace BulkyBook.DataAccess.Repository
             if (!string.IsNullOrEmpty(includeProperties))
 			{
 				foreach (var includeProp in includeProperties
-					.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+					.Split(new char[] { ',', ' ' }, StringSplitOptions.RemoveEmptyEntries))
 				{
 					query = query.Include(includeProp);
 				}

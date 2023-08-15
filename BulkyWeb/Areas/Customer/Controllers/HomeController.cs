@@ -31,7 +31,7 @@ namespace BulkyBookWeb.Areas.Customer.Controllers
                     _unitOfWork.ShoppingCart.GetAll(cart => cart.ApplicationUserId == claim.Value).Count());
             }
 
-            IEnumerable<Product> productList = _unitOfWork.Product.GetAll(includeProperties: "Category");
+            IEnumerable<Product> productList = _unitOfWork.Product.GetAll(includeProperties: "Category,ProductImages");
             return View(productList);
         }
 
@@ -40,7 +40,7 @@ namespace BulkyBookWeb.Areas.Customer.Controllers
             ShoppingCart cart = new ShoppingCart()
             {
                 Product = _unitOfWork.Product
-                    .Get(product => product.Id == productId, includeProperties: "Category"),
+                    .Get(product => product.Id == productId, includeProperties: "Category,ProductImages"),
                 Count = 1,
                 ProductId = productId
             };

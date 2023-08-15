@@ -51,40 +51,17 @@ namespace BulkyBookWeb.Areas.Admin.Controllers
 			}
 			else
 			{
-				productVM.Product = _unitOfWork.Product.Get(product => product.Id == id);
+				// Include the name same as in DbContext
+				productVM.Product = _unitOfWork.Product.Get(product => product.Id == id, includeProperties: "ProductImages");
 				return View(productVM);
 			}
 		}
 
 		[HttpPost]
-		public async Task<IActionResult> Upsert(ProductVM productVM, IFormFile? file)
+		public async Task<IActionResult> Upsert(ProductVM productVM, List<IFormFile>? files)
 		{
 			if (ModelState.IsValid)
 			{
-				string wwwRootPath = _webHostEnvironment.WebRootPath;
-				if (file != null)
-				{
-					string fileName = Guid.NewGuid().ToString() + Path.GetExtension(file.FileName);
-					string productPath = Path.Combine(wwwRootPath, @"images/product");
-
-					if (!string.IsNullOrEmpty(productVM.Product.ImageUrl))
-					{
-						// delete old image
-						var oldImagePath = Path.Combine(wwwRootPath, productVM.Product.ImageUrl);
-						if (System.IO.File.Exists(oldImagePath))
-						{
-							System.IO.File.Delete(oldImagePath);
-						}
-					}
-
-					using (var fileStream = new FileStream(Path.Combine(productPath, fileName), FileMode.Create))
-					{
-						await file.CopyToAsync(fileStream);
-					}
-
-					productVM.Product.ImageUrl = @"images/product/" + fileName;
-				}
-
 				if (productVM.Product.Id == 0)
 				{
 					await _unitOfWork.Product.AddAsync(productVM.Product);
@@ -95,8 +72,46 @@ namespace BulkyBookWeb.Areas.Admin.Controllers
 					_unitOfWork.Product.Update(productVM.Product);
 					TempData["success"] = "Product updated successfully!";
 				}
-
 				await _unitOfWork.SaveAsync();
+
+				string wwwRootPath = _webHostEnvironment.WebRootPath;
+				if (files != null)
+				{
+					string productPath = "images/products/product-" + productVM.Product.Id;
+					string finalPath = Path.Combine(wwwRootPath, productPath);
+
+					if (!Directory.Exists(finalPath))
+					{
+						Directory.CreateDirectory(finalPath);
+					}
+
+					// Always null because no asp-for of it in the UpSert file
+					if (productVM.Product.ProductImages == null)
+					{
+						productVM.Product.ProductImages = new List<ProductImage>();
+					}
+
+					foreach (IFormFile file in files)
+					{
+						string fileName = Guid.NewGuid().ToString() + Path.GetExtension(file.FileName);
+						using (var fileStream = new FileStream(Path.Combine(finalPath, fileName), FileMode.Create))
+						{
+							await file.CopyToAsync(fileStream);
+						}
+
+						ProductImage productImage = new()
+						{
+							ImageUrl = productPath + "/" + fileName,
+							ProductId = productVM.Product.Id
+						};
+						
+						// This list will automatically updated to the ProductImage table
+						productVM.Product.ProductImages.Add(productImage);
+					}
+					_unitOfWork.Product.Update(productVM.Product);
+					await _unitOfWork.SaveAsync();
+				}
+
 				return RedirectToAction("Index");
 			}
 			else
@@ -111,6 +126,27 @@ namespace BulkyBookWeb.Areas.Admin.Controllers
 			}
 		}
 
+		public async Task<IActionResult> DeleteImage(int imageId)
+		{
+			var imageToBeDeleted = _unitOfWork.ProductImage.Get(img => img.Id == imageId);
+			int productId = imageToBeDeleted.ProductId;
+			if (imageToBeDeleted != null)
+			{
+				if (!string.IsNullOrEmpty(imageToBeDeleted.ImageUrl))
+				{
+					var oldImagePath = Path.Combine(_webHostEnvironment.WebRootPath, imageToBeDeleted.ImageUrl);
+					if (System.IO.File.Exists(oldImagePath))
+					{
+						System.IO.File.Delete(oldImagePath);
+					}
+				}
+				_unitOfWork.ProductImage.Remove(imageToBeDeleted);
+				await _unitOfWork.SaveAsync();
+				TempData["succes"] = "Deleted image successfully!!!";
+			}
+			return RedirectToAction(nameof(Upsert), new { id = productId });
+		}
+
 		#region API CALLS
 
 		[HttpGet]
@@ -123,16 +159,20 @@ namespace BulkyBookWeb.Areas.Admin.Controllers
 		[HttpDelete]
 		public async Task<IActionResult> Delete(int? id)
 		{
-			var productToBeDeleted = _unitOfWork.Product.Get(product => product.Id == id);
+			var productToBeDeleted = _unitOfWork.Product.Get(product => product.Id == id, includeProperties: "ProductImages");
 			if (productToBeDeleted == null)
 			{
 				return Json(new { success = false, message = "Error while deleting!" });
 			}
-			var oldImagePath = Path.Combine(_webHostEnvironment.WebRootPath, productToBeDeleted.ImageUrl);
-			if (System.IO.File.Exists(oldImagePath))
+
+			string productPath = "images/products/product-" + id;
+			string finalPath = Path.Combine(_webHostEnvironment.WebRootPath, productPath);
+
+			if (Directory.Exists(finalPath))
 			{
-				System.IO.File.Delete(oldImagePath);
+				Directory.Delete(finalPath, true);
 			}
+
 			_unitOfWork.Product.Remove(productToBeDeleted);
 			await _unitOfWork.SaveAsync();
 			return Json(new { success = true, message = "Record has been deleted!" });
